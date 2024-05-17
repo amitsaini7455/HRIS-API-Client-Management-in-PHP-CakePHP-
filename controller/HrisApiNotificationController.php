@@ -4,33 +4,33 @@ use App\Controller\AppController;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
 
-class HrisApiNotificationController extends AppController{
+class NotificationController extends AppController{
 
     public function initialize() {
         parent::initialize();
         $this->loadComponent('Auth');
-        $this->hrisApiClients = TableRegistry::get('hris_api_clients');
+        $this->hrisApiClients = TableRegistry::get('api_clients');
         $this->uploadPath = WWW_ROOT . 'uploads' . DS . 'app_notification' . DS;
         $this->uploadPathView = '/uploads' . DS . 'app_notification' . DS;
 
         $this->moduleArray = API_NOTIFICATION_MODULES;
 
-        $this->HrisApiNotification = TableRegistry::get('hris_api_notification');
-        $this->hrisApiNotificationRoleColor = TableRegistry::get('hris_api_notification_role_color');
-        $this->hrisApiNotificationImage = TableRegistry::get('hris_api_notification_image');
+        $this->ApiNotification = TableRegistry::get('hris_api_notification');
+        $this->ApiNotificationRoleColor = TableRegistry::get('hris_api_notification_role_color');
+        $this->ApiNotificationImage = TableRegistry::get('hris_api_notification_image');
 
 
     }
 
     public function index(){
         
-        $hrisNotification = $this->HrisApiNotification->find('all')
+        $Notification = $this->ApiNotification->find('all')
                             ->select(['hris_api_notification.id','hris_api_notification.client_id',
                             'hris_api_notification.module','hris_api_notification.default_male','hris_api_notification.default_female','hris_api_notification.status','hris_api_notification.created_on',
                             'hris_api_notification.updated_on','clientName'=>'hac.name','imagePath' => 'hris_api_notification_image.file_path'])
                             ->join([
                                     'hac' => [
-                                        'table' => 'hris_api_clients',
+                                        'table' => 'api_clients',
                                         'type' => 'LEFT',
                                         'conditions' => [
                                             'hac.id' =>  new \Cake\Database\Expression\IdentifierExpression('hris_api_notification.client_id')
@@ -48,19 +48,19 @@ class HrisApiNotificationController extends AppController{
 
 
 
-        $this->set(compact('hrisNotification','moduleArray','uploadPath'));
+        $this->set(compact('Notification','moduleArray','uploadPath'));
     }
     
 
     public function add()
 {
-    $notification = $this->HrisApiNotification->newEntity();
+    $notification = $this->ApiNotification->newEntity();
     if ($this->request->is('post')) {
         $employee_id = $this->Auth->user('emp_id');
         $getData = $this->request->getData();
         $client_id = $getData['client_id'];
 
-        $existingNotification = $this->HrisApiNotification->find()
+        $existingNotification = $this->ApiNotification->find()
             ->where(['client_id' => $client_id])
             ->first();
 
@@ -76,13 +76,13 @@ class HrisApiNotificationController extends AppController{
                 $insertData[$key] = (is_array($data)) ? implode(',', $data) : $data;
             }
         }
-        $insertData['module_id'] = $getData['module'];
-        $insertData['created_by'] = $employee_id;
-        $insertData['created_on'] = date('Y-m-d H:i:s');
+        $insertData['module'] = $getData['modules'];
+        $insertData['created'] = $employee_id;
+        $insertData['created'] = date('Y-m-d H:i:s');
 
 
-        $defaultMale = $getData['default_male']['name'];
-        if(!empty($defaultMale)){
+        Male = $getData['default_male']['name'];
+        if(!empty(Male)){
             $attachment = $this->uploadAttachments($getData['default_male']);
             if(!empty($attachment)){
                 $insertData['default_male'] = $attachment;
@@ -110,8 +110,8 @@ class HrisApiNotificationController extends AppController{
                 }
             }
 
-        $notification = $this->HrisApiNotification->patchEntity($notification, $insertData);
-        if ($this->HrisApiNotification->save($notification)) {
+        $notification = $this->ApiNotification->patchEntity($notification, $insertData);
+        if ($this->ApiNotification->save($notification)) {
             
             $lastInsertedId = $notification->id;
             $notificationImageTable = TableRegistry::get('hris_api_notification_image');
@@ -121,12 +121,9 @@ class HrisApiNotificationController extends AppController{
                 'module_id' => $insertData['module_id'],
                 'file_path' => $insertData['file_path'], 
             ];
-            
-            //echo "<pre>";print_r($insertData);die;
 
             $notificationImage = $notificationImageTable->patchEntity($notificationImage, $notificationImageData);
             $notificationImageTable->save($notificationImage);
-           // echo "<pre>";print_r($notificationImage);die;
            
             $this->Flash->success(__('Data has been saved.'));
             return $this->redirect(['action' => 'index']);
@@ -155,7 +152,7 @@ class HrisApiNotificationController extends AppController{
 
 public function edit($id = null)
 {
-    $notification = $this->HrisApiNotification->get($id);
+    $notification = $this->ApiNotification->get($id);
     if ($this->request->is(['patch', 'post', 'put'])) {
         $employee_id = $this->Auth->user('emp_id');
         $getData = $this->request->getData();
@@ -170,8 +167,8 @@ public function edit($id = null)
         $updateData['updated_by'] = $employee_id;
         $updateData['updated_on'] = date('Y-m-d H:i:s');
 
-        $defaultMale = $getData['default_male']['name'];
-        if (!empty($defaultMale)) {
+        Male = $getData['default_male']['name'];
+        if (!empty(Male)) {
             $attachment = $this->uploadAttachments($getData['default_male']);
             if (!empty($attachment)) {
                 $updateData['default_male'] = $attachment;
@@ -200,8 +197,8 @@ public function edit($id = null)
             }
         }
 
-        $notification = $this->HrisApiNotification->patchEntity($notification, $updateData);
-        if ($this->HrisApiNotification->save($notification)) {
+        $notification = $this->ApiNotification->patchEntity($notification, $updateData);
+        if ($this->ApiNotification->save($notification)) {
             $notificationImageTable = TableRegistry::get('hris_api_notification_image');
             $notificationImage = $notificationImageTable->find()
                 ->where(['notification_id' => $id])
@@ -224,7 +221,7 @@ public function edit($id = null)
             $this->Flash->success(__('Data has been saved.'));
             return $this->redirect(['action' => 'index']);
         }
-        $this->Flash->error(__('Data could not be saved. Please, try again.'));
+        $this->Flash->error(__('Data could not be saved..'));
     }
 
     $clients = $this->hrisApiClients
@@ -263,7 +260,7 @@ public function edit($id = null)
           if (file_exists($uploadPath) && is_dir($uploadPath)) {
             move_uploaded_file($file['tmp_name'], $uploadFile);
             return  $fileName;
-          } elseif (mkdir($uploadPath, 0777)) {
+          } elseif (mkdir($uploadPath, 0888)) {
             move_uploaded_file($file['tmp_name'], $uploadFile);
             return  $fileName;
           }
@@ -277,30 +274,18 @@ public function edit($id = null)
 
 public function rolecolormapping()
 {
-    $hrisNotification = $this->hrisApiNotificationRoleColor->find('all')
-        ->select([
-            'hris_api_notification_role_color.id',
-            'hris_api_notification_role_color.client_id',
-            'hris_api_notification_role_color.role_id',
-            'hris_api_notification_role_color.color_code',
-            'hris_api_notification_role_color.status',
-            'hris_api_notification_role_color.created_on',
-            'hris_api_notification_role_color.updated_on',
-            'clientName' => 'hac.name',
-        ])
+    $Notification = $this->ApiNotificationRoleColor->find('all')
+      
         ->join([
             'hac' => [
-                'table' => 'hris_api_clients',
+                'table' => 'api_clients',
                 'type' => 'LEFT',
-                'conditions' => [
-                    'hac.id' =>  new \Cake\Database\Expression\IdentifierExpression('hris_api_notification_role_color.client_id')
-                ]
             ],
         ])
         ->enableHydration(false)
         ->toArray();
 
-    $this->set(compact('hrisNotification'));
+    $this->set(compact('Notification'));
 }
 
 public function getClientRoles()
@@ -334,7 +319,7 @@ public function getClientRoles()
 
 
     public function rolecolormappingadd(){
-            $notification = $this->hrisApiNotificationRoleColor->newEntity();
+            $notification = $this->ApiNotificationRoleColor->newEntity();
             if ($this->request->is('post')) {
             $employee_id = $this->Auth->user('emp_id');
             $getData = $this->request->getData();
@@ -346,8 +331,8 @@ public function getClientRoles()
             $insertData['created_by'] = $employee_id;
             $insertData['created_on'] = date('Y-m-d H:i:s');
             
-            $notification = $this->hrisApiNotificationRoleColor->patchEntity($notification, $insertData);
-            if ($this->hrisApiNotificationRoleColor->save($notification)) {
+            $notification = $this->ApiNotificationRoleColor->patchEntity($notification, $insertData);
+            if ($this->ApiNotificationRoleColor->save($notification)) {
                 $this->Flash->success(__('Data has been saved.'));
                 return $this->redirect(['action' => 'role-color-mapping']);
             }
@@ -371,7 +356,7 @@ public function getClientRoles()
          }
 
     public function rolecolormappingedit($id){
-    $notification = $this->hrisApiNotificationRoleColor->get($id);
+    $notification = $this->ApiNotificationRoleColor->get($id);
         if ($this->request->is(['patch', 'post', 'put'])) {
             $employee_id             = $this->Auth->user('emp_id');
             $getData                  = $this->request->getData();
@@ -383,8 +368,8 @@ public function getClientRoles()
             $updateData['updated_by']     = $employee_id;
             $updateData['updated_on']     = date('Y-m-d H:i:s');
 
-            $notification = $this->hrisApiNotificationRoleColor->patchEntity($notification, $updateData);
-            if ($this->hrisApiNotificationRoleColor->save($notification)) {
+            $notification = $this->ApiNotificationRoleColor->patchEntity($notification, $updateData);
+            if ($this->ApiNotificationRoleColor->save($notification)) {
                 $this->Flash->success(__('Data has been saved.'));
 
                 return $this->redirect(['action' => 'role-color-mapping']);
@@ -405,8 +390,8 @@ public function getClientRoles()
         public function delete($id = null)
     {
         //$this->request->allowMethod(['post', 'delete']);
-        $notification = $this->hrisApiNotificationRoleColor->get($id);
-        if ($this->hrisApiNotificationRoleColor->delete($notification)) {
+        $notification = $this->ApiNotificationRoleColor->get($id);
+        if ($this->ApiNotificationRoleColor->delete($notification)) {
             $this->Flash->success(__('Data has been deleted.'));
         } else {
             $this->Flash->error(__('Data could not be deleted. Please, try again.'));
@@ -417,21 +402,6 @@ public function getClientRoles()
 
 
     
-    public function statusChange() {
-        $this->autoRender = false;
-        $id = $this->request['data'];
-        if (isset($id)) {
-            $status = $this->hrisApiNotificationRoleColor->get($id);
-            $status->status = ($status['status']==1 ? 0 : 1);           
-            if ($this->hrisApiNotificationRoleColor->save($status)) {
-                echo "success"; die;
-            }else{
-                echo "fails"; die;
-            }
-        }else{
-            echo "fails"; die;
-        }       
-    }
     
 
     
